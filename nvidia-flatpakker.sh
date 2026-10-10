@@ -24,10 +24,16 @@ if [[ -v NVIDIA_DIR ]]; then
     	exit 1;
     fi
     NVIDIA_DIR=$(basename $NVIDIA_DIR)
+    
+    if [[ ! -v NVIDIA_DRIVER_VERSION ]]; then
+        echo "NVIDIA_DRIVER_VERSION isn't set. This should be exactly as it shows in the extracted NVIDIA driver archive (VERSION in NVIDIA-Linux-ARCH-VERSION.run)."
+        exit 1;
+    fi
 else
     echo "NVIDIA_DIR isn't set. Exiting."
     exit 1;
 fi
+
 
 if [[ ! -v BUILD_32_BIT ]]; then
     echo "set BUILD_32_BIT=1 to build the 32-bit driver."
@@ -52,8 +58,19 @@ else
     cp -a $NVIDIA_DIR/32/*.so $NVIDIA_DIR/32/*.so.* $PREFIX/lib/
 fi
 
+# Adapted from the Arch packaging at https://gitlab.archlinux.org/archlinux/packaging/packages/nvidia-utils/-/blob/781100d68445c9d44e8850809489648178288c4c/PKGBUILD#L37
+# create soname links
+find $PREFIX/lib/ -type f -name '*.so*' -print0 | while read -d $'\0' _lib; do
+    _soname=$(dirname "${_lib}")/$(readelf -d "${_lib}" | grep -Po 'SONAME.*: \[\K[^]]*' || true)
+    _base=$(echo ${_soname} | sed -r 's/(.*)\.so.*/\1.so/')
+    [[ -e "${_soname}" ]] || ln -s $(basename "${_lib}") "${_soname}"
+    [[ -e "${_base}" ]] || ln -s $(basename "${_soname}") "${_base}"
+done
+
 # Vulkan
-install -d $PREFIX/vulkansc/icd.d/
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    install -d $PREFIX/vulkansc/icd.d/
+fi
 install -d $PREFIX/vulkan/icd.d/
 install -d $PREFIX/vulkan/implicit_layer.d/
 
@@ -74,9 +91,11 @@ mv $PREFIX/egl/egl_external_platform.d/10_nvidia_wayland.json $PREFIX/egl/egl_ex
 install -d $PREFIX/OpenCL/vendors
 install -p -Dm644 $NVIDIA_DIR/nvidia.icd $PREFIX/OpenCL/vendors/nvidia.icd
 
-# Wine
-install -d $PREFIX/lib/nvidia/wine
-cp -a $NVIDIA_DIR/*.dll $PREFIX/lib/nvidia/wine/
+# Wine, only for x86
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    install -d $PREFIX/lib/nvidia/wine
+    cp -a $NVIDIA_DIR/*.dll $PREFIX/lib/nvidia/wine/
+fi
 
 echo "All done. Move $EXTENSION_ID to /var/lib/flatpak/extension, or if running as a user, XDG_DATA_HOME/flatpak/extension."
 
