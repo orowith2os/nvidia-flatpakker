@@ -1,6 +1,10 @@
 # nvidia-flatpakker
 Convert NVIDIA driver archives into Flatpak driver extensions.
 
+Distributions can make use of this script to sync their NVIDIA drivers with 
+Flatpaks on the user's system, and remove the need for users to run `flatpak update`
+after system updates to make sure their flatpaks still get GPU acceleration.
+
 Run the script by setting NVIDIA_DIR to an extracted NVIDIA driver archive's 
 directory.
 
