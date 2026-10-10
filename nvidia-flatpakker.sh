@@ -74,6 +74,10 @@ mv $PREFIX/egl/egl_external_platform.d/10_nvidia_wayland.json $PREFIX/egl/egl_ex
 install -d $PREFIX/OpenCL/vendors
 install -p -Dm644 $NVIDIA_DIR/nvidia.icd $PREFIX/OpenCL/vendors/nvidia.icd
 
+# Wine
+install -d $PREFIX/lib/nvidia/wine
+cp -a $NVIDIA_DIR/*.dll $PREFIX/lib/nvidia/wine/
+
 echo "All done. Move $EXTENSION_ID to /var/lib/flatpak/extension, or if running as a user, XDG_DATA_HOME/flatpak/extension."
 
 exit 0;
